@@ -1,0 +1,193 @@
+#ifndef DOFIT_HEADER
+#define DOFIT_HEADER
+//We start by declaring the nature of our dataset. (Is the data real or simulated?)
+const char* output_folder_name = "Jpsi_MC_2020";
+
+//Header of this function
+double _mmin = 2.8;
+double _mmax = 3.3;
+double _nbins = 0; //Let it 0 if dont want to change
+
+//Information for output at the end of run
+const char* fit_functions = "Gaussian + CrystalBall + Exponential";
+string prefix_file_name = "";
+#endif
+
+#include "TFile.h"
+#include "TTree.h"
+#include "TMath.h"
+#include "RooRealVar.h"
+#include "RooDataSet.h"
+#include "RooCategory.h"
+#include "RooFormulaVar.h"
+#include "RooDataHist.h"
+#include "RooPlot.h"
+#include "RooGaussian.h"
+#include "RooCBShape.h"
+#include "RooExponential.h"
+#include "RooAddPdf.h"
+#include "RooFitResult.h"
+#include "RooSimultaneous.h"
+#include "TCanvas.h"
+
+#include <iostream>
+using namespace std;
+using namespace RooFit;
+
+//Returns array with [yield_all, yield_pass, err_all, err_pass]
+#define DEFAULT_FUCTION_NAME_USED
+double* doFit(string condition, string MuonId, const char* savePath = NULL)
+{
+	cout << "----- Fitting data on bin -----\n";
+	cout << "Conditions: " << condition << "\n";
+	cout << "-------------------------------\n";
+
+	string MuonId_str = "";
+	if      (MuonId == "trackerMuon")    MuonId_str = "PassingProbeTrackingMuon";
+	else if (MuonId == "standaloneMuon") MuonId_str = "PassingProbeStandAloneMuon";
+	else if (MuonId == "globalMuon")     MuonId_str = "PassingProbeGlobalMuon";
+	
+	const char *filename = "DATA/TagAndProbe_Jpsi_MC.root";
+	const char *treename = "tagandprobe";
+	string cutVarString = "TagMuon_Pt >= 7.0 && fabs(TagMuon_Eta) <= 2.4";
+	if (!condition.empty())
+		cutVarString += " && " + condition;
+
+	RooCategory MuonId_var(MuonId_str.c_str(), MuonId_str.c_str());
+	MuonId_var.defineType("Passing", 1);
+	MuonId_var.defineType("Failing", 0);
+	RooRealVar InvariantMass("InvariantMass", "InvariantMass", _mmin, _mmax);
+	RooRealVar ProbeMuon_Pt ("ProbeMuon_Pt",  "ProbeMuon_Pt",   0., 40.);
+	RooRealVar ProbeMuon_Eta("ProbeMuon_Eta", "ProbeMuon_Eta", -2.4, 2.4);
+	RooRealVar ProbeMuon_Phi("ProbeMuon_Phi", "ProbeMuon_Phi", -TMath::Pi(), TMath::Pi());
+	RooRealVar TagMuon_Pt   ("TagMuon_Pt",    "TagMuon_Pt",     0., 40.);
+	RooRealVar TagMuon_Eta  ("TagMuon_Eta",   "TagMuon_Eta",   -2.4, 2.4);
+	RooRealVar TagMuon_Phi  ("TagMuon_Phi",   "TagMuon_Phi",   -TMath::Pi(), TMath::Pi());
+	RooArgSet vars(MuonId_var, InvariantMass, ProbeMuon_Pt, ProbeMuon_Eta, ProbeMuon_Phi,
+		TagMuon_Pt, TagMuon_Eta, TagMuon_Phi);
+
+	if (_nbins > 0) InvariantMass.setBins(_nbins);
+		_nbins = InvariantMass.getBinning().numBins();
+
+	cout << "Preparing RooDataSet for 'ALL'...\n";
+	RooDataSet* Data_ALL = new RooDataSet("Data_All", "Data_All", vars, ImportFromFile(filename, treename), Cut(cutVarString.c_str())); 
+
+	// Create a subset of dataset for events that pass the MuonId condition
+	cout << "Preparing RooDataSet for 'PASSING'...\n";
+	RooDataSet* Data_PASS = new RooDataSet("Data_Pass", "Data_Pass", Data_ALL, *Data_ALL->get(), (MuonId_str + "==1").c_str());
+	
+	RooDataHist dh_ALL (Data_ALL->GetName(),  Data_ALL->GetTitle(),  RooArgSet(InvariantMass), *Data_ALL);
+	RooDataHist dh_PASS(Data_PASS->GetName(), Data_PASS->GetTitle(), RooArgSet(InvariantMass), *Data_PASS);
+
+	TCanvas* c_all  = new TCanvas;
+	TCanvas* c_pass = new TCanvas;
+
+	RooPlot* frame = InvariantMass.frame(RooFit::Title("Invariant Mass"));
+
+	//SIGNAL VARIABLES
+	RooRealVar mean    ("mean", "mean", 3.094, 3.07, 3.2);
+	RooRealVar sigma_gs("sigma_gs", "sigma_gs", 0.05*(_mmax-_mmin), 0., 0.5*(_mmax-_mmin));
+	RooRealVar sigma_cb("sigma_cb", "sigma_cb", 0.038);
+	RooRealVar alpha   ("alpha", "alpha", 1.71);
+	RooRealVar n       ("n", "n", 3.96);
+	n.setConstant(kTRUE);
+	   
+	//FIT FUNCTIONS
+	RooGaussian gaussian   ("GS", "GS", InvariantMass, mean, sigma_gs);
+	RooCBShape  crystalball("CB", "CB", InvariantMass, mean, sigma_cb, alpha, n);
+	RooRealVar  frac1      ("frac1","frac1",0.55);
+	RooAddPdf   signal     ("signal", "signal", RooArgList(gaussian, crystalball), RooArgList(frac1));
+
+	//BACKGROUND VARIABLES
+	RooRealVar a0("a0", "a0", 0, -10, 0, "");
+
+	//BACKGROUND FUNCTION
+	RooExponential background("background", "background", InvariantMass, a0);
+
+	RooRealVar n_signal_all ("n_signal_all", "n_signal_all", Data_ALL->sumEntries()/2, 0., Data_ALL->sumEntries());
+	RooRealVar n_signal_pass("n_signal_pass", "n_signal_pass", Data_PASS->sumEntries()/2, 0., Data_PASS->sumEntries());
+
+	RooRealVar n_back_all ("n_back_all", "n_back_all", Data_ALL->sumEntries()/2, 0., Data_ALL->sumEntries());
+	RooRealVar n_back_pass("n_back_pass", "n_back_pass", Data_PASS->sumEntries()/2, 0., Data_PASS->sumEntries());
+
+	RooAddPdf model_all ("model_all", "model_all", RooArgList(signal, background), RooArgList(n_signal_all, n_back_all));
+	RooAddPdf model_pass("model_pass", "model_pass", RooArgList(signal, background), RooArgList(n_signal_pass, n_back_pass));
+	
+	// SIMULTANEOUS FIT
+	RooCategory sample("sample","sample") ;
+	sample.defineType("All") ;
+	sample.defineType("Passing") ;
+	RooDataHist combData("combData", "combined data", InvariantMass,
+		Index(sample), Import("ALL", dh_ALL), Import("PASSING", dh_PASS));
+	
+	RooSimultaneous simPdf("simPdf","simultaneous pdf", sample);
+	simPdf.addPdf(model_all,"ALL");
+	simPdf.addPdf(model_pass,"PASSING");
+	
+	RooFitResult* fitres = new RooFitResult;
+	fitres = simPdf.fitTo(combData, RooFit::Save());
+
+	RooRealVar* yield_all  = (RooRealVar*)fitres->floatParsFinal().find("n_signal_all");
+	RooRealVar* yield_pass = (RooRealVar*)fitres->floatParsFinal().find("n_signal_pass");
+	delete fitres;
+
+	// OUTPUT ARRAY
+	double* output = new double[4];
+	
+	output[0] = yield_all->getVal();
+	output[1] = yield_pass->getVal();
+	
+	output[2] = yield_all->getError();
+	output[3] = yield_pass->getError();
+	
+	frame->SetTitle("ALL");
+	frame->SetXTitle("#mu^{+}#mu^{-} invariant mass [GeV/c^{2}]");
+	Data_ALL->plotOn(frame);
+	
+	model_all.plotOn(frame);
+	model_all.plotOn(frame,RooFit::Components("GS"),RooFit::LineStyle(kDashed),RooFit::LineColor(kGreen));
+	model_all.plotOn(frame,RooFit::Components("CB"),RooFit::LineStyle(kDashed),RooFit::LineColor(kMagenta - 5));
+	model_all.plotOn(frame,RooFit::Components("background"),RooFit::LineStyle(kDashed),RooFit::LineColor(kRed));
+	
+	c_all->cd();
+	frame->Draw("");
+	
+	RooPlot* frame_pass = InvariantMass.frame(RooFit::Title("Invariant Mass"));
+	
+	c_pass->cd();
+	
+	frame_pass->SetTitle("PASSING");
+	frame_pass->SetXTitle("#mu^{+}#mu^{-} invariant mass [GeV/c^{2}]");
+	Data_PASS->plotOn(frame_pass);
+	
+	model_pass.plotOn(frame_pass);
+	model_pass.plotOn(frame_pass,RooFit::Components("GS"),RooFit::LineStyle(kDashed),RooFit::LineColor(kGreen));
+	model_pass.plotOn(frame_pass,RooFit::Components("CB"),RooFit::LineStyle(kDashed),RooFit::LineColor(kMagenta - 5));
+	model_pass.plotOn(frame_pass,RooFit::Components("background"),RooFit::LineStyle(kDashed),RooFit::LineColor(kRed));
+	
+	frame_pass->Draw();
+
+	//TLegend* tl = new TLegend(0.70,0.86,0.96,0.92);
+	//tl->AddEntry(frame_pass->findObject("GS"), "Signal",   "f");
+	//tl->SetTextSize(0.04);
+	//tl->Draw();
+
+	if (savePath != NULL)
+	{
+		c_pass->SaveAs((string(savePath) + condition + "_PASS.png").c_str());
+		c_all->SaveAs ((string(savePath) + condition + "_ALL.png").c_str());
+	}
+
+	delete Data_ALL;
+	delete Data_PASS;
+
+	delete c_all;
+	delete c_pass;
+
+	delete frame;
+	delete frame_pass;
+
+	cout << "---------- Fit ended ----------\n";
+	// [yield_all, yield_pass, err_all, err_pass]
+	return output;
+}

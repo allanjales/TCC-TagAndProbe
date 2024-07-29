@@ -1,0 +1,17 @@
+# Generated files in sideband subtraction method efficiency tool
+*.png
+*.pdf
+
+# Generated files in fitting method efficiency tool
+*/results/
+*/partial_result/
+
+# Used files in fitting method efficiency tool
+*/DATA/*.root
+*/data/*.root
+*.root
+
+# Used in vscode
+.vscode/
+*.d
+*.log
