@@ -1,7 +1,3 @@
-#include <TH2D.h>
-#include <iostream>
-using namespace std;
-
 TH2D* create_TH2D(const char* name, const char* title, string xquantity, string yquantity, int nbinsx, int nbinsy,
 	double* xbins, double* ybins)
 {

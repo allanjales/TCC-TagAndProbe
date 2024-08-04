@@ -6,20 +6,33 @@
 !--------------------------------
 */
 
+#include <TFile.h>
+#include <TEfficiency.h>
+#include <TCanvas.h>
+#include <TLegend.h>
+#include <TLatex.h>
+#include <TGraphAsymmErrors.h>
+#include <TSystem.h>
+#include <TH1F.h>
+
+#include <regex>
+#include <iostream>
+using namespace std;
+
 //CONFIGS
 
-int useScheme = 1;
-//Jpsi    Sideband Run vs Jpsi    Sideband MC
-//Jpsi    Fitting  Run vs Jpsi    Fitting  MC
-//Jpsi    Sideband Run vs Jpsi    Fitting  Run
-//Upsilon Sideband Run vs Upsilon Sideband MC
-//Upsilon Fitting  Run vs Upsilon Fitting  MC
-//Upsilon Sideband Run vs Upsilon Fitting  Run
+int useScheme = 0;
+//0 = Jpsi    Sideband Run vs Jpsi    Sideband MC
+//1 = Jpsi    Fitting  Run vs Jpsi    Fitting  MC
+//2 = Jpsi    Sideband Run vs Jpsi    Fitting  Run
+//3 = Upsilon Sideband Run vs Upsilon Sideband MC
+//4 = Upsilon Fitting  Run vs Upsilon Fitting  MC
+//5 = Upsilon Sideband Run vs Upsilon Fitting  Run
 
 //Muon id analyse
 bool doTracker    = true;
-bool doStandalone = false;
-bool doGlobal     = false;
+bool doStandalone = true;
+bool doGlobal     = true;
 
 //quantity analyse
 bool doPt  = true;
@@ -55,27 +68,27 @@ const char* sid_run_jpsi[][2] = {
 };
 
 const char* fit_run_upsilon[][2] = {
-	{"../../fitting/results/efficiencies/efficiency/Upsilon_Run_2011/Pt_trackerMuon.root",	"trackerMuon_Pt_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Upsilon_Run_2011/Eta_trackerMuon.root", "trackerMuon_Eta_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Upsilon_Run_2011/Phi_trackerMuon.root",	"trackerMuon_Phi_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Upsilon_Run_2011/Pt_trackerMuon.root",	"trackerMuon_Pt_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Upsilon_Run_2011/Eta_trackerMuon.root",	"trackerMuon_Eta_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Upsilon_Run_2011/Phi_trackerMuon.root",	"trackerMuon_Phi_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Upsilon_Run_2011/Pt_trackerMuon.root",	"trackerMuon_Pt_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Upsilon_Run_2011/Eta_trackerMuon.root",	"trackerMuon_Eta_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Upsilon_Run_2011/Phi_trackerMuon.root",	"trackerMuon_Phi_Efficiency"}
+	{"../../fitting/results/efficiency/Upsilon_Run_2011/Pt_trackerMuon.root",      "trackerMuon_Pt_Efficiency"},
+	{"../../fitting/results/efficiency/Upsilon_Run_2011/Eta_trackerMuon.root",     "trackerMuon_Eta_Efficiency"},
+	{"../../fitting/results/efficiency/Upsilon_Run_2011/Phi_trackerMuon.root",     "trackerMuon_Phi_Efficiency"},
+	{"../../fitting/results/efficiency/Upsilon_Run_2011/Pt_standaloneMuon.root",   "standaloneMuon_Pt_Efficiency"},
+	{"../../fitting/results/efficiency/Upsilon_Run_2011/Eta_standaloneMuon.root",  "standaloneMuon_Eta_Efficiency"},
+	{"../../fitting/results/efficiency/Upsilon_Run_2011/Phi_standaloneMuon.root",  "standaloneMuon_Phi_Efficiency"},
+	{"../../fitting/results/efficiency/Upsilon_Run_2011/Pt_globalMuon.root",       "globalMuon_Pt_Efficiency"},
+	{"../../fitting/results/efficiency/Upsilon_Run_2011/Eta_globalMuon.root",      "globalMuon_Eta_Efficiency"},
+	{"../../fitting/results/efficiency/Upsilon_Run_2011/Phi_globalMuon.root",      "globalMuon_Phi_Efficiency"}
 };
 
 const char* fit_run_jpsi[][2] = {
-	{"../../fitting/results/efficiencies/efficiency/Jpsi_Run_2011/Pt_trackerMuon.root",		"trackerMuon_Pt_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Jpsi_Run_2011/Eta_trackerMuon.root",	"trackerMuon_Eta_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Jpsi_Run_2011/Phi_trackerMuon.root",	"trackerMuon_Phi_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Jpsi_Run_2011/Pt_trackerMuon.root",		"trackerMuon_Pt_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Jpsi_Run_2011/Eta_trackerMuon.root",	"trackerMuon_Eta_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Jpsi_Run_2011/Phi_trackerMuon.root",	"trackerMuon_Phi_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Jpsi_Run_2011/Pt_trackerMuon.root",		"trackerMuon_Pt_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Jpsi_Run_2011/Eta_trackerMuon.root",	"trackerMuon_Eta_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Jpsi_Run_2011/Phi_trackerMuon.root",	"trackerMuon_Phi_Efficiency"}
+	{"../../fitting/results/efficiency/Jpsi_Run_2011/Pt_trackerMuon.root",      "trackerMuon_Pt_Efficiency"},
+	{"../../fitting/results/efficiency/Jpsi_Run_2011/Eta_trackerMuon.root",     "trackerMuon_Eta_Efficiency"},
+	{"../../fitting/results/efficiency/Jpsi_Run_2011/Phi_trackerMuon.root",     "trackerMuon_Phi_Efficiency"},
+	{"../../fitting/results/efficiency/Jpsi_Run_2011/Pt_standaloneMuon.root",   "standaloneMuon_Pt_Efficiency"},
+	{"../../fitting/results/efficiency/Jpsi_Run_2011/Eta_standaloneMuon.root",  "standaloneMuon_Eta_Efficiency"},
+	{"../../fitting/results/efficiency/Jpsi_Run_2011/Phi_standaloneMuon.root",  "standaloneMuon_Phi_Efficiency"},
+	{"../../fitting/results/efficiency/Jpsi_Run_2011/Pt_globalMuon.root",       "globalMuon_Pt_Efficiency"},
+	{"../../fitting/results/efficiency/Jpsi_Run_2011/Eta_globalMuon.root",      "globalMuon_Eta_Efficiency"},
+	{"../../fitting/results/efficiency/Jpsi_Run_2011/Phi_globalMuon.root",      "globalMuon_Phi_Efficiency"}
 };
 
 // MC METHOD
@@ -93,39 +106,39 @@ const char* sid_mc_upsilon[][2] = {
 };
 
 const char* sid_mc_jpsi[][2] = {
-	{"../results/Jpsi_MC_2020/generated_hist.root", "efficiency/plots/Muon_Pt_Tracker_Probe_Efficiency_Efficiency"},
-	{"../results/Jpsi_MC_2020/generated_hist.root", "efficiency/plots/Muon_Eta_Tracker_Probe_Efficiency_Efficiency"},
-	{"../results/Jpsi_MC_2020/generated_hist.root", "efficiency/plots/Muon_Phi_Tracker_Probe_Efficiency_Efficiency"},
-	{"../results/Jpsi_MC_2020/generated_hist.root", "efficiency/plots/Muon_Pt_Standalone_Probe_Efficiency_Efficiency"},
-	{"../results/Jpsi_MC_2020/generated_hist.root", "efficiency/plots/Muon_Eta_Standalone_Probe_Efficiency_Efficiency"},
-	{"../results/Jpsi_MC_2020/generated_hist.root", "efficiency/plots/Muon_Phi_Standalone_Probe_Efficiency_Efficiency"},
-	{"../results/Jpsi_MC_2020/generated_hist.root", "efficiency/plots/Muon_Pt_Global_Probe_Efficiency_Efficiency"},
-	{"../results/Jpsi_MC_2020/generated_hist.root", "efficiency/plots/Muon_Eta_Global_Probe_Efficiency_Efficiency"},
-	{"../results/Jpsi_MC_2020/generated_hist.root", "efficiency/plots/Muon_Phi_Global_Probe_Efficiency_Efficiency"}
+	{"../results/Jpsi_MC_2020/generated_hist.root", "efficiency/plots/Muon_Pt_Tracker_Probe_Efficiency"},
+	{"../results/Jpsi_MC_2020/generated_hist.root", "efficiency/plots/Muon_Eta_Tracker_Probe_Efficiency"},
+	{"../results/Jpsi_MC_2020/generated_hist.root", "efficiency/plots/Muon_Phi_Tracker_Probe_Efficiency"},
+	{"../results/Jpsi_MC_2020/generated_hist.root", "efficiency/plots/Muon_Pt_Standalone_Probe_Efficiency"},
+	{"../results/Jpsi_MC_2020/generated_hist.root", "efficiency/plots/Muon_Eta_Standalone_Probe_Efficiency"},
+	{"../results/Jpsi_MC_2020/generated_hist.root", "efficiency/plots/Muon_Phi_Standalone_Probe_Efficiency"},
+	{"../results/Jpsi_MC_2020/generated_hist.root", "efficiency/plots/Muon_Pt_Global_Probe_Efficiency"},
+	{"../results/Jpsi_MC_2020/generated_hist.root", "efficiency/plots/Muon_Eta_Global_Probe_Efficiency"},
+	{"../results/Jpsi_MC_2020/generated_hist.root", "efficiency/plots/Muon_Phi_Global_Probe_Efficiency"}
 };
 
 const char* fit_mc_upsilon[][2] = {
-	{"../../fitting/results/efficiencies/efficiency/Upsilon1S_MC_2020/Pt_trackerMuon.root",		"trackerMuon_Pt_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Upsilon1S_MC_2020/Eta_trackerMuon.root", 	"trackerMuon_Eta_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Upsilon1S_MC_2020/Phi_trackerMuon.root",	"trackerMuon_Phi_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Upsilon1S_MC_2020/Pt_trackerMuon.root",		"trackerMuon_Pt_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Upsilon1S_MC_2020/Eta_trackerMuon.root",	"trackerMuon_Eta_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Upsilon1S_MC_2020/Phi_trackerMuon.root",	"trackerMuon_Phi_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Upsilon1S_MC_2020/Pt_trackerMuon.root",		"trackerMuon_Pt_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Upsilon1S_MC_2020/Eta_trackerMuon.root",	"trackerMuon_Eta_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Upsilon1S_MC_2020/Phi_trackerMuon.root",	"trackerMuon_Phi_Efficiency"}
+	{"../../fitting/results/efficiency/Upsilon1S_MC_2020/Pt_trackerMuon.root",      "trackerMuon_Pt_Efficiency"},
+	{"../../fitting/results/efficiency/Upsilon1S_MC_2020/Eta_trackerMuon.root",     "trackerMuon_Eta_Efficiency"},
+	{"../../fitting/results/efficiency/Upsilon1S_MC_2020/Phi_trackerMuon.root",     "trackerMuon_Phi_Efficiency"},
+	{"../../fitting/results/efficiency/Upsilon1S_MC_2020/Pt_standaloneMuon.root",   "standaloneMuon_Pt_Efficiency"},
+	{"../../fitting/results/efficiency/Upsilon1S_MC_2020/Eta_standaloneMuon.root",  "standaloneMuon_Eta_Efficiency"},
+	{"../../fitting/results/efficiency/Upsilon1S_MC_2020/Phi_standaloneMuon.root",  "standaloneMuon_Phi_Efficiency"},
+	{"../../fitting/results/efficiency/Upsilon1S_MC_2020/Pt_globalMuon.root",       "globalMuon_Pt_Efficiency"},
+	{"../../fitting/results/efficiency/Upsilon1S_MC_2020/Eta_globalMuon.root",      "globalMuon_Eta_Efficiency"},
+	{"../../fitting/results/efficiency/Upsilon1S_MC_2020/Phi_globalMuon.root",      "globalMuon_Phi_Efficiency"}
 };
 
 const char* fit_mc_jpsi[][2] = {
-	{"../../fitting/results/efficiencies/efficiency/Jpsi_MC_2020/Pt_trackerMuon.root",	"trackerMuon_Pt_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Jpsi_MC_2020/Eta_trackerMuon.root", "trackerMuon_Eta_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Jpsi_MC_2020/Phi_trackerMuon.root",	"trackerMuon_Phi_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Jpsi_MC_2020/Pt_trackerMuon.root",	"trackerMuon_Pt_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Jpsi_MC_2020/Eta_trackerMuon.root",	"trackerMuon_Eta_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Jpsi_MC_2020/Phi_trackerMuon.root",	"trackerMuon_Phi_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Jpsi_MC_2020/Pt_trackerMuon.root",	"trackerMuon_Pt_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Jpsi_MC_2020/Eta_trackerMuon.root",	"trackerMuon_Eta_Efficiency"},
-	{"../../fitting/results/efficiencies/efficiency/Jpsi_MC_2020/Phi_trackerMuon.root",	"trackerMuon_Phi_Efficiency"}
+	{"../../fitting/results/efficiency/Jpsi_MC_2020/Pt_trackerMuon.root",      "trackerMuon_Pt_Efficiency"},
+	{"../../fitting/results/efficiency/Jpsi_MC_2020/Eta_trackerMuon.root",     "trackerMuon_Eta_Efficiency"},
+	{"../../fitting/results/efficiency/Jpsi_MC_2020/Phi_trackerMuon.root",     "trackerMuon_Phi_Efficiency"},
+	{"../../fitting/results/efficiency/Jpsi_MC_2020/Pt_standaloneMuon.root",   "standaloneMuon_Pt_Efficiency"},
+	{"../../fitting/results/efficiency/Jpsi_MC_2020/Eta_standaloneMuon.root",  "standaloneMuon_Eta_Efficiency"},
+	{"../../fitting/results/efficiency/Jpsi_MC_2020/Phi_standaloneMuon.root",  "standaloneMuon_Phi_Efficiency"},
+	{"../../fitting/results/efficiency/Jpsi_MC_2020/Pt_globalMuon.root",       "globalMuon_Pt_Efficiency"},
+	{"../../fitting/results/efficiency/Jpsi_MC_2020/Eta_globalMuon.root",      "globalMuon_Eta_Efficiency"},
+	{"../../fitting/results/efficiency/Jpsi_MC_2020/Phi_globalMuon.root",      "globalMuon_Phi_Efficiency"}
 };
 
 //How comparisons will be saved
@@ -166,12 +179,12 @@ const char* labelScheme[][2] = {
 
 //Where to save each comparison
 const char* directoriesToSave[] = {
-	"../results/Comparison/Comparison_Jpsi_Sideband_Run_vs_MC/",
-	"../results/Comparison/Comparison_Jpsi_Fitting_Run_vs_MC/",
-	"../results/Comparison/Comparison_Jpsi_Sideband_vs_Fitting/",
-	"../results/Comparison/Comparison_Upsilon_Sideband_Run_vs_MC/",
-	"../results/Comparison/Comparison_Upsilon_Fitting_Run_vs_MC/",
-	"../results/Comparison/Comparison_Upsilon_Sideband_vs_Fitting/"
+	"../../Comparisons/Jpsi_Sideband_Run_vs_MC/",
+	"../../Comparisons/Jpsi_Fitting_Run_vs_MC/",
+	"../../Comparisons/Jpsi_Run_Sideband_vs_Fitting/",
+	"../../Comparisons/Upsilon_Sideband_Run_vs_MC/",
+	"../../Comparisons/Upsilon_Fitting_Run_vs_MC/",
+	"../../Comparisons/Upsilon_Run_Sideband_vs_Fitting/"
 };
 
 //Colors for each comparison

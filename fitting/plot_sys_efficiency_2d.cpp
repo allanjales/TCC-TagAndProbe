@@ -1,15 +1,15 @@
 // -----------------------------------
 // Author: Allan Jales
-
-// Function: This macro will make a 2D histogram using the TH2D class from ROOT.
+// -----------------------------------
+// Descrption: This macro will make a 2D histogram using the TH2D class from ROOT.
 // Also, it is using systematic uncertainties to make the efficiency calculus.
-
+// -----------------------------------
 // Outputs:
 // - a .root file containing the efficiency TH2D histogram for each systematic uncertainties and the final result;
 // - a .png file for each bin fitted.
 // -----------------------------------
 
-#include "TFile.h"
+#include <TFile.h>
 #include <TH2D.h>
 #include <iostream>
 #include <chrono>
@@ -19,6 +19,7 @@ using namespace std;
 #include "src/create_TH2D.h"
 #include "src/yields_n_errs_to_TH2Ds_bin.h"
 #include "src/get_efficiency_TH2D.h"
+#include "src/StopWatch.h"
 
 // Change if you need
 #include "src/dofits/DoFit_Jpsi_Run.h"
@@ -26,36 +27,30 @@ using namespace std;
 //#include "src/dofits/DoFit_Jpsi_MC.h"
 //#include "src/dofits/DoFit_Jpsi_MC_2xGaus.h"
 
-// Which Muon Id do you want to study?
-//string MuonId   = "trackerMuon";
-//string MuonId   = "standaloneMuon";
-string MuonId   = "globalMuon";
-
 // Bins to study
 string xquantity = "Pt";
 double xbins[] = {0.0, 3.4, 4.0, 5.0, 6.0, 8.0, 40.};
 string yquantity = "Eta";
 double ybins[] = {0.0, 0.4, 0.6, 0.95, 1.2, 1.4, 2.4};
-
-
 // Note: the y axis is absolute!
 
-void plot_sys_efficiency_2d()
+void plot_sys_efficiency_2d(string muonId)
 {
 	//Path where is going to save fit results png for every bin 
-	string path_bins_fit_folder = string("results/bins_fit/systematic_2D/") + output_folder_name + "/" + MuonId + "/";
+	string filename = yquantity + "_" + xquantity + "_" + muonId;
+	string path_bins_fit_folder = string("results/systematic_2D/") + output_folder_name + "/bins_fit/" + filename + "/";
 	create_folder(path_bins_fit_folder.c_str(), true);
 
 
 	//Path where is going to save the efficiency results
-	string directoryToSave = string("results/efficiencies/systematic_2D/") + output_folder_name + "/";
+	string directoryToSave = string("results/systematic_2D/") + output_folder_name + "/";
 	create_folder(directoryToSave.c_str());
 
 	//Get number of bins
 	const int nbinsy = sizeof(ybins)/sizeof(*ybins) - 1;
 	const int nbinsx = sizeof(xbins)/sizeof(*xbins) - 1;
 
-	string file_path = directoryToSave + yquantity + "_" + xquantity + "_" + MuonId + ".root";
+	string file_path = directoryToSave + filename + ".root";
 	TFile* generatedFile = new TFile(file_path.c_str(),"recreate");
 	generatedFile->mkdir("histograms/");
 	generatedFile->   cd("histograms/");
@@ -79,7 +74,7 @@ void plot_sys_efficiency_2d()
 	TH2D *hist_pass_final      = create_TH2D("pass_final"     , "Pass Final",      xquantity, yquantity, nbinsx, nbinsy, xbins, ybins);
 
 	//Loop and fits
-	chrono::steady_clock::time_point begin = chrono::steady_clock::now();
+	StopWatch Watcher;
 	const double default_min = _mmin;
 	const double default_max = _mmax;
 	string conditions;
@@ -105,7 +100,7 @@ void plot_sys_efficiency_2d()
 			_mmax = default_max;
 			_nbins = 100;
 			prefix_file_name = "nominal_";
-			yields_n_errs = doFit(conditions, MuonId, string(path_bins_fit_folder + prefix_file_name).c_str());
+			yields_n_errs = doFit(conditions, muonId, string(path_bins_fit_folder + prefix_file_name).c_str());
 			yields_n_errs_systematic[0] =  yields_n_errs[0];
 			yields_n_errs_systematic[1] =  yields_n_errs[1];
 			yields_n_errs_final[0] =  yields_n_errs[0];
@@ -121,7 +116,7 @@ void plot_sys_efficiency_2d()
 			_mmax = default_max;
 			_nbins = 100;
 			prefix_file_name = "2xgaus_";
-			yields_n_errs = doFit2xGaus(conditions, MuonId, string(path_bins_fit_folder + prefix_file_name).c_str());
+			yields_n_errs = doFit2xGaus(conditions, muonId, string(path_bins_fit_folder + prefix_file_name).c_str());
 			yields_n_errs_systematic[2] += pow(yields_n_errs[2], 2);
 			yields_n_errs_systematic[3] += pow(yields_n_errs[3], 2);
 			yields_n_errs_to_TH2Ds_bin(hist_all_2gauss, hist_pass_2gauss, i+1, j+1, yields_n_errs);
@@ -138,7 +133,7 @@ void plot_sys_efficiency_2d()
 			replace(mmax_string.begin(), mmax_string.end(), '.', 'p');
 			prefix_file_name  = string("mass_") + mmin_string.substr(0, mmin_string.length()-4) + string("_");
 			prefix_file_name +=                   mmax_string.substr(0, mmax_string.length()-4) + string("_");
-			yields_n_errs = doFit(conditions, MuonId, string(path_bins_fit_folder + prefix_file_name).c_str());
+			yields_n_errs = doFit(conditions, muonId, string(path_bins_fit_folder + prefix_file_name).c_str());
 			yields_n_errs_systematic[2] += pow(yields_n_errs[2], 2);
 			yields_n_errs_systematic[3] += pow(yields_n_errs[3], 2);
 			yields_n_errs_to_TH2Ds_bin(hist_all_massup, hist_pass_massup, i+1, j+1, yields_n_errs);
@@ -155,7 +150,7 @@ void plot_sys_efficiency_2d()
 			replace(mmax_string.begin(), mmax_string.end(), '.', 'p');
 			prefix_file_name  = string("mass_") + mmin_string.substr(0, mmin_string.length()-4) + string("_");
 			prefix_file_name +=                   mmax_string.substr(0, mmax_string.length()-4) + string("_");
-			yields_n_errs = doFit(conditions, MuonId, string(path_bins_fit_folder + prefix_file_name).c_str());
+			yields_n_errs = doFit(conditions, muonId, string(path_bins_fit_folder + prefix_file_name).c_str());
 			yields_n_errs_systematic[2] += pow(yields_n_errs[2], 2);
 			yields_n_errs_systematic[3] += pow(yields_n_errs[3], 2);
 			yields_n_errs_to_TH2Ds_bin(hist_all_massdown, hist_pass_massdown, i+1, j+1, yields_n_errs);
@@ -167,7 +162,7 @@ void plot_sys_efficiency_2d()
 			_mmax = default_max;
 			_nbins = 105;
 			prefix_file_name = "binfit105_";
-			yields_n_errs = doFit(conditions, MuonId, string(path_bins_fit_folder + prefix_file_name).c_str());
+			yields_n_errs = doFit(conditions, muonId, string(path_bins_fit_folder + prefix_file_name).c_str());
 			yields_n_errs_systematic[2] += pow(yields_n_errs[2], 2);
 			yields_n_errs_systematic[3] += pow(yields_n_errs[3], 2);
 			yields_n_errs_to_TH2Ds_bin(hist_all_binup, hist_pass_binup, i+1, j+1, yields_n_errs);
@@ -179,7 +174,7 @@ void plot_sys_efficiency_2d()
 			_mmax = default_max;
 			_nbins = 95;
 			prefix_file_name = "binfit95_";
-			yields_n_errs = doFit(conditions, MuonId, string(path_bins_fit_folder + prefix_file_name).c_str());
+			yields_n_errs = doFit(conditions, muonId, string(path_bins_fit_folder + prefix_file_name).c_str());
 			yields_n_errs_systematic[2] += pow(yields_n_errs[2], 2);
 			yields_n_errs_systematic[3] += pow(yields_n_errs[3], 2);
 			yields_n_errs_to_TH2Ds_bin(hist_all_bindown, hist_pass_bindown, i+1, j+1, yields_n_errs);
@@ -200,17 +195,17 @@ void plot_sys_efficiency_2d()
 			yields_n_errs_to_TH2Ds_bin(hist_all_final, hist_pass_final, i+1, j+1, yields_n_errs_final);
 		}
 	}
-	chrono::steady_clock::time_point end = chrono::steady_clock::now();
+	Watcher.Stop();
 
 	generatedFile->cd("/");
-	get_efficiency_TH2D(hist_all_nominal,    hist_pass_nominal,    xquantity, yquantity, MuonId, "Nominal"   );
-	get_efficiency_TH2D(hist_all_2gauss,     hist_pass_2gauss,     xquantity, yquantity, MuonId, "2xGauss"   );
-	get_efficiency_TH2D(hist_all_massup,     hist_pass_massup,     xquantity, yquantity, MuonId, "MassUp"    );
-	get_efficiency_TH2D(hist_all_massdown,   hist_pass_massdown,   xquantity, yquantity, MuonId, "MassDown"  );
-	get_efficiency_TH2D(hist_all_binup,      hist_pass_binup,      xquantity, yquantity, MuonId, "BinUp"     );
-	get_efficiency_TH2D(hist_all_bindown,    hist_pass_bindown,    xquantity, yquantity, MuonId, "BinDown"   );
-	get_efficiency_TH2D(hist_all_systematic, hist_pass_systematic, xquantity, yquantity, MuonId, "Systematic");
-	get_efficiency_TH2D(hist_all_final,      hist_pass_final,      xquantity, yquantity, MuonId, "Final"     );
+	get_efficiency_TH2D(hist_all_nominal,    hist_pass_nominal,    xquantity, yquantity, muonId, "Nominal"   );
+	get_efficiency_TH2D(hist_all_2gauss,     hist_pass_2gauss,     xquantity, yquantity, muonId, "2xGauss"   );
+	get_efficiency_TH2D(hist_all_massup,     hist_pass_massup,     xquantity, yquantity, muonId, "MassUp"    );
+	get_efficiency_TH2D(hist_all_massdown,   hist_pass_massdown,   xquantity, yquantity, muonId, "MassDown"  );
+	get_efficiency_TH2D(hist_all_binup,      hist_pass_binup,      xquantity, yquantity, muonId, "BinUp"     );
+	get_efficiency_TH2D(hist_all_bindown,    hist_pass_bindown,    xquantity, yquantity, muonId, "BinDown"   );
+	get_efficiency_TH2D(hist_all_systematic, hist_pass_systematic, xquantity, yquantity, muonId, "Systematic");
+	get_efficiency_TH2D(hist_all_final,      hist_pass_final,      xquantity, yquantity, muonId, "Final"     );
 
 	generatedFile->Write();
 	generatedFile->Close();
@@ -219,6 +214,15 @@ void plot_sys_efficiency_2d()
 
 	cout << "\n------------------------\n";
 	cout << "Output: " << file_path;
-	cout << "\nTook " << chrono::duration_cast<chrono::minutes>(end - begin).count() << " minutes.";
+	cout << "\nTook " << Watcher.TimeElapsedString() << ".";
 	cout << "\n------------------------\n";
+}
+
+void plot_sys_efficiency_2d()
+{
+	StopWatch Watcher;
+	plot_sys_efficiency_2d("trackerMuon");
+	plot_sys_efficiency_2d("standaloneMuon");
+	plot_sys_efficiency_2d("globalMuon");
+	cout << "Took " << Watcher.TimeElapsedString() << " for all calculation combinations for " + string(output_folder_name) + "\n";
 }

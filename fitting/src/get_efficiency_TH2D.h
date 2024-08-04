@@ -1,8 +1,3 @@
-#include <TH2D.h>
-#include <TCanvas.h>
-#include <iostream>
-using namespace std;
-
 TH2D* get_efficiency_TH2D(TH2D* hall, TH2D* hpass, string xquantity, string yquantity, string MuonId, string prefix_name = "")
 {
 	// Create efficiency TH2D
@@ -40,8 +35,6 @@ TH2D* get_efficiency_TH2D(TH2D* hall, TH2D* hpass, string xquantity, string yqua
 
 	TCanvas* c1 = new TCanvas();
 	c1->cd();
-	heff->GetYaxis()->SetDecimals();
-	heff->GetYaxis()->SetMaxDigits(3);
 	heff->Draw("colztexte");
 	c1->SetLogx();
 	delete c1;

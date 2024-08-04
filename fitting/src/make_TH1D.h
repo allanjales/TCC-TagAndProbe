@@ -1,8 +1,5 @@
 TH1D* make_TH1D(string name, double** values, int index, double* bins, int nbins, string quantity = "", bool draw = false)
 {
-	//AddBinContent
-	//HISTOGRAM NEEDS TO HAVE VARIABLE BINS
-   
 	TH1D* hist = new TH1D(name.c_str(), name.c_str(), nbins, bins);
 
 	hist->GetYaxis()->SetTitle("Events");

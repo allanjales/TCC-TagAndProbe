@@ -1,5 +1,3 @@
-#include <iostream>
-using namespace std;
 #include <TSystem.h>
 
 void create_folder(const char* folderPath, bool deleteOld = false)

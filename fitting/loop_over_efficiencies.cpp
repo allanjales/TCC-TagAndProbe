@@ -1,9 +1,9 @@
 // -----------------------------------
 // Author: Allan Jales
-
+//
 // Function: This macro will measure the eficiency over systematic uncertainties.
 // This will make some variations over the settings and show every results piled up in one 1D histogram.
-
+//
 // Outputs:
 // - a .root file containing the (TH1D) passing, (TH1D) falling and (TEfficiency) efficiency histogram;
 // - a .png file for each bin fitted.

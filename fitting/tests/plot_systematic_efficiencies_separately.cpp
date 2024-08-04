@@ -1,4 +1,12 @@
-#include "src/create_folder.cpp"
+#include "TCanvas.h"
+#include "TEfficiency.h"
+#include "TFile.h"
+#include "TGraphAsymmErrors.h"
+
+#include <iostream>
+using namespace std;
+
+#include "src/create_folder.h"
 
 void plot_systematic_efficiencies()
 {

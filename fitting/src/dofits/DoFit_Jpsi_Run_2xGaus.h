@@ -13,8 +13,6 @@ const char* fit_functions = "2xGaussians + Exponential";
 string prefix_file_name = "";
 #endif
 
-#include "TFile.h"
-#include "TTree.h"
 #include "TMath.h"
 #include "RooRealVar.h"
 #include "RooDataSet.h"
@@ -29,6 +27,7 @@ string prefix_file_name = "";
 #include "RooFitResult.h"
 #include "RooSimultaneous.h"
 #include "TCanvas.h"
+#include "TLegend.h"
 
 #include <iostream>
 using namespace std;
@@ -84,11 +83,6 @@ using namespace RooFit;
 	RooDataHist dh_ALL (Data_ALL->GetName(),  Data_ALL->GetTitle(),  RooArgSet(InvariantMass), *Data_ALL);
 	RooDataHist dh_PASS(Data_PASS->GetName(), Data_PASS->GetTitle(), RooArgSet(InvariantMass), *Data_PASS);
 
-	TCanvas* c_all  = new TCanvas;
-	TCanvas* c_pass = new TCanvas;
-
-	RooPlot* frame = InvariantMass.frame(RooFit::Title("Invariant Mass"));
-
 	//SIGNAL VARIABLES
 	RooRealVar mean  ("mean", "mean", 3.094, 3.07, 3.2);
 	RooRealVar sigma1("sigma1", "sigma1", 0.05*(_mmax-_mmin), 0., 0.5*(_mmax-_mmin));
@@ -141,38 +135,60 @@ using namespace RooFit;
 	
 	output[2] = yield_all->getError();
 	output[3] = yield_pass->getError();
-	
+
+	// DRAWING
+	RooPlot* frame = InvariantMass.frame(RooFit::Title("Invariant Mass"));
 	frame->SetTitle("ALL");
 	frame->SetXTitle("#mu^{+}#mu^{-} invariant mass [GeV/c^{2}]");
-	Data_ALL->plotOn(frame);
 	
-	model_all.plotOn(frame);
-	model_all.plotOn(frame,RooFit::Components("GS"),RooFit::LineStyle(kDashed),RooFit::LineColor(kGreen));
-	model_all.plotOn(frame,RooFit::Components("CB"),RooFit::LineStyle(kDashed),RooFit::LineColor(kMagenta - 5));
-	model_all.plotOn(frame,RooFit::Components("background"),RooFit::LineStyle(kDashed),RooFit::LineColor(kRed));
+	Data_ALL->plotOn(frame, Name("data"));
+	model_all.plotOn(frame, Name("total"));
+	model_all.plotOn(frame, RooFit::Components("GS1"), Name("GS1"), RooFit::LineStyle(kDashed), RooFit::LineColor(kGreen));
+	model_all.plotOn(frame, RooFit::Components("GS2"), Name("GS2"), RooFit::LineStyle(kDashed), RooFit::LineColor(kMagenta - 5));
+	model_all.plotOn(frame, RooFit::Components("background"), Name("background"), RooFit::LineStyle(kDashed), RooFit::LineColor(kRed));
 	
+	TCanvas* c_all = new TCanvas();
+	c_all->SetLeftMargin(0.11);
+	c_all->SetRightMargin(0.09);
 	c_all->cd();
-	frame->Draw("");
+	frame->Draw();
+
+	TLegend tlall(0.70, 0.96, 0.96, 0.92);
+	tlall.AddEntry(frame->findObject("data"), "Data");
+	tlall.AddEntry(frame->findObject("total"), "Total");
+	tlall.AddEntry(frame->findObject("GS1"), "Gaussian 1");
+	tlall.AddEntry(frame->findObject("GS2"), "Gaussian 2");
+	tlall.AddEntry(frame->findObject("background"), "Background");
+	tlall.SetTextSize(0.04);
+	tlall.SetY1(0.96 - (tlall.GetTextSize()+0.01)*tlall.GetNRows());
+	tlall.Draw();
 	
 	RooPlot* frame_pass = InvariantMass.frame(RooFit::Title("Invariant Mass"));
-	
-	c_pass->cd();
-	
+
 	frame_pass->SetTitle("PASSING");
 	frame_pass->SetXTitle("#mu^{+}#mu^{-} invariant mass [GeV/c^{2}]");
-	Data_PASS->plotOn(frame_pass);
+
+	Data_PASS->plotOn(frame_pass, Name("data"));
+	model_pass.plotOn(frame_pass, Name("total"));
+	model_pass.plotOn(frame_pass, RooFit::Components("GS1"), Name("GS1"), RooFit::LineStyle(kDashed), RooFit::LineColor(kGreen));
+	model_pass.plotOn(frame_pass, RooFit::Components("GS2"), Name("GS2"), RooFit::LineStyle(kDashed), RooFit::LineColor(kMagenta - 5));
+	model_pass.plotOn(frame_pass, RooFit::Components("background"), Name("background"), RooFit::LineStyle(kDashed), RooFit::LineColor(kRed));
 	
-	model_pass.plotOn(frame_pass);
-	model_pass.plotOn(frame_pass,RooFit::Components("GS"),RooFit::LineStyle(kDashed),RooFit::LineColor(kGreen));
-	model_pass.plotOn(frame_pass,RooFit::Components("CB"),RooFit::LineStyle(kDashed),RooFit::LineColor(kMagenta - 5));
-	model_pass.plotOn(frame_pass,RooFit::Components("background"),RooFit::LineStyle(kDashed),RooFit::LineColor(kRed));
-	
+	TCanvas* c_pass = new TCanvas();
+	c_pass->SetLeftMargin(0.11);
+	c_pass->SetRightMargin(0.09);
+	c_pass->cd();
 	frame_pass->Draw();
 
-	//TLegend* tl = new TLegend(0.70,0.86,0.96,0.92);
-	//tl->AddEntry(frame_pass->findObject("GS"), "Signal",   "f");
-	//tl->SetTextSize(0.04);
-	//tl->Draw();
+	TLegend tlpass(0.70, 0.96, 0.96, 0.92);
+	tlpass.AddEntry(frame_pass->findObject("data"), "Data");
+	tlpass.AddEntry(frame_pass->findObject("total"), "Total");
+	tlpass.AddEntry(frame_pass->findObject("GS1"), "Gaussian 1");
+	tlpass.AddEntry(frame_pass->findObject("GS2"), "Gaussian 2");
+	tlpass.AddEntry(frame_pass->findObject("background"), "Background");
+	tlpass.SetTextSize(0.04);
+	tlpass.SetY1(0.96 - (tlpass.GetTextSize()+0.01)*tlpass.GetNRows());
+	tlpass.Draw();
 
 	if (savePath != NULL)
 	{

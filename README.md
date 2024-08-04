@@ -4,7 +4,7 @@ Há dois principais métodos de estimar as eficiências. O primeiro que vou inst
 
 ## Necessário
 
-- ROOT (versão de aplicação v6.28.04)
+- ROOT (versão de aplicação v6.32.04)
 
 ## Subtração de Bandas Laterais
 
@@ -99,26 +99,12 @@ root -l -b -q simplify_data.cpp
 O código principal será executado pelo arquivo `fitting/efficiency.cpp`. As primeiras linhas estão descritas abaixo:
 
 ```cpp
-//Change if you need
+// Change if you need
 #include "src/dofits/DoFit_Jpsi_Run.h"
 //#include "src/dofits/DoFit_Jpsi_MC.h"
-
-#include "src/create_folder.h"
-#include "src/get_efficiency.h"
-#include "src/make_TH1D.h"
-
-//Which Muon Id do you want to study?
-string MuonId   = "trackerMuon";
-//string MuonId   = "standaloneMuon";
-//string MuonId   = "globalMuon";
-
-//Which quantity do you want to use?
-string quantity = "Pt";     double bins[] = {0., 2.0, 3.4, 4.0, 4.4, 4.7, 5.0, 5.6, 5.8, 6.0, 6.2, 6.4, 6.6, 6.8, 7.3, 9.5, 13.0, 17.0, 40.};
-//string quantity = "Eta";    double bins[] = {-2.4, -1.8, -1.4, -1.2, -1.0, -0.8, -0.5, -0.2, 0, 0.2, 0.5, 0.8, 1.0, 1.2, 1.4, 1.8, 2.4};
-//string quantity = "Phi";    double bins[] = {-3.0, -1.8, -1.6, -1.2, -1.0, -0.7, -0.4, -0.2, 0, 0.2, 0.4, 0.7, 1.0, 1.2, 1.6, 1.8, 3.0};
 ```
 
-Para obter todos os resultados que queremos, precisaremos permutar pelas 9 possibilidades de combinações entre `MuonId` e `quantity`. Em outras palavras, precisamos do Pt, Eta e Phi do trackerMuon, do standaloneMuon e do globalMuon. Todos os parâmetros já estão pré-definidos, bastando apenas comentar quando em desuso e descomentar quando em uso.
+Para obter todos os resultados que queremos, precisaremos permutar pelas 9 possibilidades de combinações entre `MuonId` e `quantity`. Em outras palavras, precisamos do Pt, Eta e Phi do trackerMuon, do standaloneMuon e do globalMuon. O código, a função `efficiency.cpp` fará isso automaticamente. Basta apenas selecionar o dados reais ou simulados.
 
 Ao fazer as modificações, estando com o terminal na pasta `fitting/`, basta executar o código com:
 
@@ -131,7 +117,7 @@ root -l -b -q efficiency.cpp
 Para rodar os dados reais do Jpsi, as duas primeiras linhas do arquivo `fitting/efficiency.cpp` devem ser substituidas por:
 
 ```cpp
-//Change if you need
+// Change if you need
 #include "src/dofits/DoFit_Jpsi_Run.h"
 //#include "src/dofits/DoFit_Jpsi_MC.h"
 ```
@@ -143,7 +129,7 @@ Lembre-se de rodar o código para os dados reais como descrito na seção superi
 Para rodar os dados simulados do Jpsi, as duas primeiras linhas do arquivo `fitting/efficiency.cpp` devem ser substituidas por:
 
 ```cpp
-//Change if you need
+// Change if you need
 //#include "src/dofits/DoFit_Jpsi_Run.h"
 #include "src/dofits/DoFit_Jpsi_MC.h"
 ```
@@ -152,10 +138,41 @@ Lembre-se de rodar o código para os dados simulados como descrito na seção su
 
 ### Resultados
 
-OS resultados podem ser visualizados na pasta `fitting/efficiencies/efficiency/` onde os gráficos gerados estão em suas respectivas pastas e seus respectivos `.root` correspondentes.
+OS resultados podem ser visualizados na pasta `fitting/results/efficiency/` onde os gráficos bin-a-bins gerados estão em suas respectivas pastas com seus `.root` correspondentes.
 
-## Pile up the efficiency graphs
+## Comparações entre as eficiências
 
+### Ideias gerais
+
+O código que executa a comparação entre as eficiências está dentro da pasta `sideband_subtraction/main/`, onde encontra-se um arquivo `compare_effficiency.cpp`.
+
+Para configura-lo, basta abri-lo em algum editor de texto e suas configurações gerais estarão nas primeiras linhas:
+
+```cpp
+//CONFIGS
+
+int useScheme = 1;
+//0 = Jpsi    Sideband Run vs Jpsi    Sideband MC
+//1 = Jpsi    Fitting  Run vs Jpsi    Fitting  MC
+//2 = Jpsi    Sideband Run vs Jpsi    Fitting  Run
+//3 = Upsilon Sideband Run vs Upsilon Sideband MC
+//4 = Upsilon Fitting  Run vs Upsilon Fitting  MC
+//5 = Upsilon Sideband Run vs Upsilon Fitting  Run
+```
+
+Basta colocar o valor da variável para as relações correspondentes. No projeto apresentado trabalhamos apenas com Jpsi, portanto cabem os números 0, 1 e 2.
+
+### Execução
+
+Coloque os `useScheme` para o valor que deseja e execute o código, estando com o terminal na pasta do arquivo, com:
+
+```sh
+root -l -b - q compare_effficiency.cpp
+```
+
+### Resultados
+
+Os resultados serão imagens `.png` das comparações disponíveis na pasta `/results` ao lado da pasta `sideband_subtraction` e `fitting`. Essa escolha foi feita, pois com este código podemos comparar entre sideband e fitting.
 
 ## Eficiência 2D
 
@@ -171,11 +188,6 @@ O arquivo utilizado para o cálculo dessas eficiências está em `fitting/plot_s
 #include "src/dofits/DoFit_Jpsi_Run_2xGaus.h"
 //#include "src/dofits/DoFit_Jpsi_MC.h"
 //#include "src/dofits/DoFit_Jpsi_MC_2xGaus.h"
-
-// Which Muon Id do you want to study?
-string MuonId   = "trackerMuon";
-//string MuonId   = "standaloneMuon";
-//string MuonId   = "globalMuon";
 ```
 
 Deixando as primeiras linhas como acima, basta executá-lo no terminal:
@@ -184,7 +196,7 @@ Deixando as primeiras linhas como acima, basta executá-lo no terminal:
 root -l -b -q plot_sys_efficiency_2d.cpp
 ```
 
-Para executar sobre todos as medidas estimadas, basta permutar os MuonId comentados. Fazendo para o trackerMuon, standaloneMuon e globalMuon e sempre executando o código com o comando acima.
+O código fará sozinho as estimativas para o trackerMuon, standaloneMuon e globalMuon. Basta esperar.
 
 ### Dados simulados do Jpsi
 
@@ -204,6 +216,22 @@ e repetir o comando abaixo para o trackerMuon, standaloneMuon e globalMuon:
 root -l -b -q plot_sys_efficiency_2d.cpp
 ```
 
-## Resultados
+### Resultados
 
-Os resultados desta eficiência são guardados em `fitting/efficiencies/systematic_2D/`
+Os resultados desta eficiência são guardados em `fitting/results/systematic_2D/` em suas pastas correspondentes.
+
+## Razão dados reais / simulados
+
+Os histogramas da razão dados reais/simulados são feitos pelo arquivo presente em `fitting/tests/data_mc_ratio.cpp`. Aqui não há muito o que fazer. Uma vez que tenha a eficiência 2D dos dados reais e Monte Carlo calculados, basta executar
+
+### Execução
+
+Para executar o código, abra o terminal na pasta do arquivo e execute:
+
+```sh
+root -l -b -q data_mc_ratio.cpp
+```
+
+### Resultados
+
+Os resultados deste código são guardados em `fitting/results/systematic_2D/data_mc_ratio` em formato `.png`.
