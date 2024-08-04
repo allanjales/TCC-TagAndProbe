@@ -1,0 +1,7 @@
+# Ignore data
+DATA/
+data/
+
+# Ignore vscode
+.vscode/
+
