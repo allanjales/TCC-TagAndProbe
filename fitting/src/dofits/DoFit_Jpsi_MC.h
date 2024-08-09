@@ -13,21 +13,23 @@ const char* fit_functions = "Gaussian + CrystalBall + Exponential";
 string prefix_file_name = "";
 #endif
 
-#include "TMath.h"
-#include "RooRealVar.h"
-#include "RooDataSet.h"
-#include "RooCategory.h"
-#include "RooFormulaVar.h"
-#include "RooDataHist.h"
-#include "RooPlot.h"
-#include "RooGaussian.h"
-#include "RooCBShape.h"
-#include "RooExponential.h"
-#include "RooAddPdf.h"
-#include "RooFitResult.h"
-#include "RooSimultaneous.h"
-#include "TCanvas.h"
-#include "TLegend.h"
+#include <TMath.h>
+#include <RooRealVar.h>
+#include <RooDataSet.h>
+#include <RooCategory.h>
+#include <RooFormulaVar.h>
+#include <RooDataHist.h>
+#include <RooPlot.h>
+#include <RooGaussian.h>
+#include <RooCBShape.h>
+#include <RooExponential.h>
+#include <RooAddPdf.h>
+#include <RooFitResult.h>
+#include <RooSimultaneous.h>
+#include <TCanvas.h>
+#include <TLegend.h>
+#include <RooChi2Var.h>
+#include <TLatex.h>
 
 #include <iostream>
 using namespace std;
@@ -35,16 +37,16 @@ using namespace RooFit;
 
 //Returns array with [yield_all, yield_pass, err_all, err_pass]
 #define DEFAULT_FUCTION_NAME_USED
-double* doFit(string condition, string MuonId, const char* savePath = NULL)
+double* doFit(string condition, string muonId, const char* savePath = NULL)
 {
 	cout << "----- Fitting data on bin -----\n";
 	cout << "Conditions: " << condition << "\n";
 	cout << "-------------------------------\n";
 
 	string MuonId_str = "";
-	if      (MuonId == "trackerMuon")    MuonId_str = "PassingProbeTrackingMuon";
-	else if (MuonId == "standaloneMuon") MuonId_str = "PassingProbeStandAloneMuon";
-	else if (MuonId == "globalMuon")     MuonId_str = "PassingProbeGlobalMuon";
+	if      (muonId == "trackerMuon")    MuonId_str = "PassingProbeTrackingMuon";
+	else if (muonId == "standaloneMuon") MuonId_str = "PassingProbeStandAloneMuon";
+	else if (muonId == "globalMuon")     MuonId_str = "PassingProbeGlobalMuon";
 	
 	const char *filename = "DATA/TagAndProbe_Jpsi_MC.root";
 	const char *treename = "tagandprobe";
@@ -89,7 +91,7 @@ double* doFit(string condition, string MuonId, const char* savePath = NULL)
 	//FIT FUNCTIONS
 	RooGaussian gaussian   ("GS", "GS", InvariantMass, mean, sigma_gs);
 	RooCBShape  crystalball("CB", "CB", InvariantMass, mean, sigma_cb, alpha, n);
-	RooRealVar  frac1      ("frac1","frac1",0.55);
+	RooRealVar  frac1      ("frac1", "frac1", 0.55);
 	RooAddPdf   signal     ("signal", "signal", RooArgList(gaussian, crystalball), RooArgList(frac1));
 
 	//BACKGROUND VARIABLES
@@ -135,31 +137,31 @@ double* doFit(string condition, string MuonId, const char* savePath = NULL)
 	output[3] = yield_pass->getError();
 
 	// DRAWING
-	RooPlot* frame = InvariantMass.frame(RooFit::Title("Invariant Mass"));
-	frame->SetTitle("ALL");
-	frame->SetXTitle("#mu^{+}#mu^{-} invariant mass [GeV/c^{2}]");
+	RooPlot* frame_all = InvariantMass.frame(RooFit::Title("Invariant Mass"));
+	frame_all->SetTitle("ALL");
+	frame_all->SetXTitle("#mu^{+}#mu^{-} invariant mass [GeV/c^{2}]");
 
-	Data_ALL->plotOn(frame, Name("data"));
-	model_all.plotOn(frame, Name("total"));
-	model_all.plotOn(frame, RooFit::Components("GS"), Name("GS"), RooFit::LineStyle(kDashed), RooFit::LineColor(kGreen));
-	model_all.plotOn(frame, RooFit::Components("CB"), Name("CB"), RooFit::LineStyle(kDashed), RooFit::LineColor(kMagenta - 5));
-	model_all.plotOn(frame, RooFit::Components("background"), Name("background"), RooFit::LineStyle(kDashed), RooFit::LineColor(kRed));
+	Data_ALL->plotOn(frame_all, Name("data"));
+	model_all.plotOn(frame_all, Name("total"));
+	model_all.plotOn(frame_all, RooFit::Components("GS"), Name("GS"), RooFit::LineStyle(kDashed), RooFit::LineColor(kGreen));
+	model_all.plotOn(frame_all, RooFit::Components("CB"), Name("CB"), RooFit::LineStyle(kDashed), RooFit::LineColor(kMagenta - 5));
+	model_all.plotOn(frame_all, RooFit::Components("background"), Name("background"), RooFit::LineStyle(kDashed), RooFit::LineColor(kRed));
 	
 	TCanvas* c_all = new TCanvas();
 	c_all->SetLeftMargin(0.11);
 	c_all->SetRightMargin(0.09);
 	c_all->cd();
-	frame->Draw();
+	frame_all->Draw();
 
-	TLegend tlall(0.70, 0.96, 0.96, 0.92);
-	tlall.AddEntry(frame->findObject("data"), "Data");
-	tlall.AddEntry(frame->findObject("total"), "Total");
-	tlall.AddEntry(frame->findObject("GS"), "Gaussian");
-	tlall.AddEntry(frame->findObject("CB"), "Crystal Ball");
-	tlall.AddEntry(frame->findObject("background"), "Background");
-	tlall.SetTextSize(0.04);
-	tlall.SetY1(0.96 - (tlall.GetTextSize()+0.01)*tlall.GetNRows());
-	tlall.Draw();
+	TLegend legendAll(0.70, 0.96, 0.96, 0.92);
+	legendAll.AddEntry(frame_all->findObject("data"), "Data");
+	legendAll.AddEntry(frame_all->findObject("total"), "Total");
+	legendAll.AddEntry(frame_all->findObject("GS"), "Gaussian");
+	legendAll.AddEntry(frame_all->findObject("CB"), "Crystal Ball");
+	legendAll.AddEntry(frame_all->findObject("background"), "Background");
+	legendAll.SetTextSize(0.04);
+	legendAll.SetY1(0.96 - (legendAll.GetTextSize()+0.01)*legendAll.GetNRows());
+	legendAll.Draw();
 	
 	RooPlot* frame_pass = InvariantMass.frame(RooFit::Title("Invariant Mass"));
 	frame_pass->SetTitle("PASSING");
@@ -177,15 +179,15 @@ double* doFit(string condition, string MuonId, const char* savePath = NULL)
 	c_pass->cd();
 	frame_pass->Draw();
 
-	TLegend tlpass(0.70, 0.96, 0.96, 0.92);
-	tlpass.AddEntry(frame_pass->findObject("data"), "Data");
-	tlpass.AddEntry(frame_pass->findObject("total"), "Total");
-	tlpass.AddEntry(frame_pass->findObject("GS"), "Gaussian");
-	tlpass.AddEntry(frame_pass->findObject("CB"), "Crystal Ball");
-	tlpass.AddEntry(frame_pass->findObject("background"), "Background");
-	tlpass.SetTextSize(0.04);
-	tlpass.SetY1(0.96 - (tlpass.GetTextSize()+0.01)*tlpass.GetNRows());
-	tlpass.Draw();
+	TLegend legendPass(0.70, 0.96, 0.96, 0.92);
+	legendPass.AddEntry(frame_pass->findObject("data"), "Data");
+	legendPass.AddEntry(frame_pass->findObject("total"), "Total");
+	legendPass.AddEntry(frame_pass->findObject("GS"), "Gaussian");
+	legendPass.AddEntry(frame_pass->findObject("CB"), "Crystal Ball");
+	legendPass.AddEntry(frame_pass->findObject("background"), "Background");
+	legendPass.SetTextSize(0.04);
+	legendPass.SetY1(0.96 - (legendPass.GetTextSize()+0.01)*legendPass.GetNRows());
+	legendPass.Draw();
 
 	if (savePath != NULL)
 	{
@@ -199,7 +201,7 @@ double* doFit(string condition, string MuonId, const char* savePath = NULL)
 	delete c_all;
 	delete c_pass;
 
-	delete frame;
+	delete frame_all;
 	delete frame_pass;
 
 	cout << "---------- Fit ended ----------\n";

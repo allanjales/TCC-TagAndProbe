@@ -260,6 +260,9 @@ void compare_eff_plot(TEfficiency* pEff0, TEfficiency* pEff1, string resultName,
 	//gStyle->SetOptTitle(0);
 	c1->SetMargin(0.10, 0.03, 0.11, 0.07);
 
+	pEff0->SetStatisticOption(TEfficiency::kBBayesian);
+	pEff1->SetStatisticOption(TEfficiency::kBBayesian);
+
 	//Plot
 	pEff0->SetMarkerColor(colorScheme[useScheme][0]);
 	pEff0->SetLineColor(colorScheme[useScheme][0]);
@@ -281,7 +284,7 @@ void compare_eff_plot(TEfficiency* pEff0, TEfficiency* pEff1, string resultName,
 	//Set range if is pT
 	if (strcmp(quantity, "Pt") == 0)
 	{
-		pEff0->GetPaintedGraph()->GetHistogram()->GetXaxis()->SetRangeUser(0.,40.);
+		pEff0->GetPaintedGraph()->GetHistogram()->GetXaxis()->SetRangeUser(0.,17.);
 		graph->SetMinimum(0.5);
 		graph->SetMaximum(1.2);
 
@@ -292,7 +295,7 @@ void compare_eff_plot(TEfficiency* pEff0, TEfficiency* pEff1, string resultName,
 	//Set range if is eta
 	if (strcmp(quantity, "Eta") == 0)
 	{
-		pEff0->GetPaintedGraph()->GetHistogram()->GetXaxis()->SetRangeUser(-3.,3.);
+		pEff0->GetPaintedGraph()->GetHistogram()->GetXaxis()->SetRangeUser(-2.4,2.4);
 		graph->SetMinimum(0.8);
 		graph->SetMaximum(1.08);
 

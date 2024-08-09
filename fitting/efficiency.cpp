@@ -9,8 +9,8 @@
 // -----------------------------------
 
 // Change if you need
-// #include "src/dofits/DoFit_Jpsi_Run.h"
-#include "src/dofits/DoFit_Jpsi_MC.h"
+#include "src/dofits/DoFit_Jpsi_Run.h"
+//#include "src/dofits/DoFit_Jpsi_MC.h"
 
 #include "src/create_folder.h"
 #include "src/get_efficiency.h"
@@ -22,9 +22,9 @@
 vector<double> GetBinsListOf(string quantity)
 {
 	if (quantity == "Pt")
-		return {0., 2.0, 3.4, 4.0, 4.4, 4.7, 5.0, 5.6, 5.8, 6.0, 6.2, 6.4, 6.6, 6.8, 7.3, 9.5, 13.0, 17.0, 40.};
+		return {0., 2.7, 3.4, 4.0, 4.4, 4.7, 5.0, 5.6, 5.8, 6.0, 6.2, 6.4, 6.6, 6.8, 7.3, 9.5, 13.0, 17.0, 40.};
 	if (quantity == "Eta")
-		return {-2.4, -1.8, -1.4, -1.2, -1.0, -0.8, -0.5, -0.2, 0, 0.2, 0.5, 0.8, 1.0, 1.2, 1.4, 1.8, 2.4};
+		return {-2.4, -1.6, -1.4, -1.2, -1.0, -0.8, -0.5, -0.2, 0, 0.2, 0.5, 0.8, 1.0, 1.2, 1.4, 1.6, 2.4};
 	if (quantity == "Phi")
 		return {-3.0, -1.8, -1.6, -1.2, -1.0, -0.7, -0.4, -0.2, 0, 0.2, 0.4, 0.7, 1.0, 1.2, 1.6, 1.8, 3.0};
 	return {};

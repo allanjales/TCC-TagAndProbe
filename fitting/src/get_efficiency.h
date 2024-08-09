@@ -12,8 +12,9 @@ TEfficiency* get_efficiency(TH1D* all, TH1D* pass, string quantity, string MuonI
 	all_copy ->GetYaxis()->SetTitle("Efficiency");
 	
 	TEfficiency* pEff = new TEfficiency();
+	pEff->SetStatisticOption(TEfficiency::kBBayesian);
 	pEff->SetPassedHistogram(*pass_copy, "f");
-	pEff->SetTotalHistogram (*all_copy,  "f");
+	pEff->SetTotalHistogram (*all_copy, "f");
 
 	delete all_copy;
 	delete pass_copy;
@@ -38,8 +39,8 @@ TEfficiency* get_efficiency(TH1D* all, TH1D* pass, string quantity, string MuonI
 	if (shouldWrite)
 		pEff->Write();
 	
-	TCanvas* oi = new TCanvas();
-	oi->cd();
+	TCanvas* c1 = new TCanvas();
+	c1->cd();
 	pEff->Draw();
 	
 	gPad->Update();
